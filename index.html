@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Core - AI 学习规划系统</title>
+    <style>
+        /* CSS 变量：极简现代风格 (Notion/Flowith 灵感) */
+        :root {
+            --bg-color: #ffffff;
+            --text-main: #37352f;
+            --text-muted: #787774;
+            --border-color: #e9e9e7;
+            --primary-color: #2383e2;
+            --primary-hover: #1461ab;
+            --card-bg: #ffffff;
+            --card-hover: #f7f7f5;
+            --shadow-sm: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+            --shadow-md: rgba(15, 15, 15, 0.05) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition-fast: 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 800px;
+            min-height: 80vh;
+        }
+
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 标题样式 */
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-size: 15px;
+        }
+
+        /* 表单输入页 */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        label span.optional {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 12px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            outline: none;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+            background: #fafafa;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            background: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background-color: var(--text-main);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: opacity var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn.primary {
+            background-color: var(--primary-color);
+        }
+
+        .btn.primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* 加载动画页 */
+        #loading-view {
+            text-align: center;
+            padding: 100px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 15px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* 顶部导航 Tabs (计划/追踪) */
+        .nav-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all var(--transition-fast);
+        }
+
+        .tab.active {
+            color: var(--text-main);
+            border-bottom-color: var(--text-main);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text-main);
+            background: var(--card-hover);
+            border-radius: 4px 4px 0 0;
+        }
+
+        /* 计划卡片列表 */
+        .plan-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .day-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--card-bg);
+            overflow: hidden;
+            transition: box-shadow var(--transition-fast);
+        }
+
+        .day-card:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .day-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: var(--card-bg);
+            font-weight: 600;
+            user-select: none;
+        }
+
+        .day-header:hover {
+            background: var(--card-hover);
+        }
+
+        .day-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .day-summary {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .toggle-icon {
+            transition: transform var(--transition-fast);
+        }
+
+        .day-card.expanded .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        .day-content {
+            display: none;
+            padding: 0 16px 16px 16px;
+            border-top: 1px solid var(--border-color);
+            background: #fafafa;
+        }
+
+        .day-card.expanded .day-content {
+            display: block;
+        }
+
+        /* 任务条目 */
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-time {
+            font-size: 13px;
+            color: var(--text-muted);
+            min-width: 90px;
+            padding-top: 2px;
+        }
+
+        .task-detail {
+            flex: 1;
+        }
+
+        .task-name {
+            font-weight: 500;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .task-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #e3f2fd;
+            color: var(--primary-hover);
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+
+        .task-tag.break {
+            background: #f5f5f5;
+            color: var(--text-muted);
+        }
+
+        /* 进度追踪页 */
+        .progress-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            background: var(--card-bg);
+        }
+
+        .progress-bar-bg {
+            height: 12px;
+            background: var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 1s ease-in-out;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .checklist .check-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .check-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .check-item.completed span {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="input-view">
+        <h1>Nexus Core 学习规划助手</h1>
+        <p class="subtitle">填写您的“学习者角色卡”，AI将自动生成可执行的周度计划。</p>
+
+        <form id="plan-form">
+            <div class="form-group">
+                <label for="goal">🎯 核心目标</label>
+                <input type="text" id="goal" placeholder="例如：三个月内雅思冲刺7分 (听阅7+ / 写口6)" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="current-level">📊 现有水平与痛点</label>
+                <textarea id="current-level" placeholder="例如：词汇量3000左右，阅读速度慢，长难句看不懂..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="time-resource">⏳ 时间与精力资源 <span>(辅助颗粒度排期)</span></label>
+                <textarea id="time-resource" placeholder="例如：工作日每晚 19:00-22:00，周末 9:00-17:00，通勤有40分钟碎片时间..."></textarea>
+            </div>
+
+            <button type="submit" class="btn primary">
+                ✨ 生成专属学习规划
+            </button>
+        </form>
+    </div>
+
+    <div id="loading-view" class="hidden">
+        <div class="spinner"></div>
+        <p class="loading-text" id="loading-msg">系统初始化中...</p>
+    </div>
+
+    <div id="workspace-view" class="hidden">
+        <h1>我的学习主页</h1>
+        <p class="subtitle" id="display-goal-text">目标：加载中...</p>
+
+        <div class="nav-tabs">
+            <div class="tab active" data-target="plan-tab">📅 本周计划</div>
+            <div class="tab" data-target="progress-tab">📈 进度追踪</div>
+        </div>
+
+        <div id="plan-tab" class="tab-content">
+            <div class="plan-list" id="plan-container">
+                </div>
+        </div>
+
+        <div id="progress-tab" class="tab-content hidden">
+            <div class="progress-container">
+                <h2>基础筑基期 - 第1周进度</h2>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-stats">
+                    <span>已完成：3 / 10 任务</span>
+                    <span>预计还需 12 小时</span>
+                </div>
+
+                <h3>今日待办任务 (模拟)</h3>
+                <div class="checklist">
+                    <label class="check-item completed">
+                        <input type="checkbox" checked disabled>
+                        <span>[听力] 精听 Section 1 (30 mins)</span>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" onclick="this.parentElement.classList.toggle('completed')">
+                        <span>[词汇] 核心高频词汇背诵 + 艾宾浩斯复习 (45 mins)</span>
+                    </label>
+                    <label class="check-item">
+                        <input type="checkbox" onclick="this.parentElement.classList.toggle('completed')">
+                        <span>[阅读] 长难句结构图拆解练习 5句 (30 mins)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mock API 数据 (模拟 "时间安排规划师" 的结构化输出)
+    const mockPlanData = [
+        {
+            day: "周一",
+            summary: "重点：词汇输入 + 听力基础",
+            tasks: [
+                { time: "08:00-08:30", type: "碎片吸收", tagClass: "task-tag", name: "通勤词汇巩固：核心词汇100个速刷" },
+                { time: "19:00-20:00", type: "深度输入", tagClass: "task-tag", name: "阅读基础：长难句语法骨架拆解 (主谓宾剥离)" },
+                { time: "20:00-20:15", type: "脑力恢复", tagClass: "task-tag break", name: "番茄休息 + 4-7-8呼吸法放松" },
+                { time: "20:15-21:15", type: "专项突破", tagClass: "task-tag", name: "听力精听：剑雅 Section 1 (错题复盘归类)" }
+            ]
+        },
+        {
+            day: "周二",
+            summary: "重点：阅读技巧 + 口语素材积累",
+            tasks: [
+                { time: "08:00-08:30", type: "碎片吸收", tagClass: "task-tag", name: "昨晚错词复习 + 英语播客泛听" },
+                { time: "19:00-20:30", type: "深度输出", tagClass: "task-tag", name: "阅读实战：定位词技巧应用 + 计时刷题 (1篇)" },
+                { time: "20:30-21:30", type: "互动练习", tagClass: "task-tag", name: "口语 Part 1 沉浸式模拟问答 (录音自纠)" }
+            ]
+        },
+        {
+            day: "周三",
+            summary: "重点：写作框架搭建",
+            tasks: [
+                { time: "19:00-20:30", type: "框架梳理", tagClass: "task-tag", name: "大作文：论据展开逻辑树分析 (不写全篇，只写提纲)" },
+                { time: "20:45-21:45", type: "专项突破", tagClass: "task-tag", name: "听力同义替换词对积累汇总" }
+            ]
+        }
+    ];
+
+    // DOM 元素获取
+    const form = document.getElementById('plan-form');
+    const inputView = document.getElementById('input-view');
+    const loadingView = document.getElementById('loading-view');
+    const workspaceView = document.getElementById('workspace-view');
+    const loadingMsg = document.getElementById('loading-msg');
+    const planContainer = document.getElementById('plan-container');
+    const goalText = document.getElementById('display-goal-text');
+    const tabs = document.querySelectorAll('.tab');
+
+    // 模拟 API 请求函数
+    function fetchPlanData(payload) {
+        return new Promise((resolve) => {
+            // 模拟网络延迟和多角色思考过程
+            setTimeout(() => { loadingMsg.textContent = "学习科学家正在诊断阶段..."; }, 500);
+            setTimeout(() => { loadingMsg.textContent = "时间安排规划师正在排期..."; }, 1200);
+            setTimeout(() => { resolve(mockPlanData); }, 2000);
+        });
+    }
+
+    // 渲染计划卡片
+    function renderPlan(data) {
+        planContainer.innerHTML = ''; // 清空容器
+        data.forEach((dayData, index) => {
+            // 默认展开第一天
+            const isExpanded = index === 0 ? 'expanded' : '';
+            
+            const tasksHtml = dayData.tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-time">${task.time}</div>
+                    <div class="task-detail">
+                        <div class="task-name">
+                            <span class="${task.tagClass}">${task.type}</span>
+                            ${task.name}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            const cardHtml = `
+                <div class="day-card ${isExpanded}">
+                    <div class="day-header" onclick="toggleCard(this)">
+                        <div class="day-title">
+                            <span class="toggle-icon">▶</span>
+                            <span>${dayData.day}</span>
+                        </div>
+                        <span class="day-summary">${dayData.summary}</span>
+                    </div>
+                    <div class="day-content">
+                        ${tasksHtml}
+                    </div>
+                </div>
+            `;
+            planContainer.insertAdjacentHTML('beforeend', cardHtml);
+        });
+    }
+
+    // 卡片展开/折叠逻辑
+    window.toggleCard = function(element) {
+        const card = element.parentElement;
+        card.classList.toggle('expanded');
+    }
+
+    // 表单提交事件
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const goal = document.getElementById('goal').value;
+        const currentLevel = document.getElementById('current-level').value;
+        const timeResource = document.getElementById('time-resource').value;
+
+        // 切换到加载视图
+        inputView.classList.add('hidden');
+        loadingView.classList.remove('hidden');
+
+        // 发起模拟请求
+        const payload = { goal, currentLevel, timeResource };
+        const data = await fetchPlanData(payload);
+
+        // 数据返回后，渲染界面并切换视图
+        goalText.textContent = `当前里程碑：${goal}`;
+        renderPlan(data);
+        
+        loadingView.classList.add('hidden');
+        workspaceView.classList.remove('hidden');
+        
+        // 触发进度条动画
+        setTimeout(() => {
+            document.getElementById('progress-fill').style.width = '30%';
+        }, 100);
+    });
+
+    // Tab 切换逻辑
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // 移除所有 active
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            
+            // 激活当前 tab
+            tab.classList.add('active');
+            const targetId = tab.getAttribute('data-target');
+            document.getElementById(targetId).classList.remove('hidden');
+        });
+    });
+</script>
+
+</body>
+</html>
